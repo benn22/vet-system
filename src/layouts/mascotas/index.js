@@ -176,7 +176,10 @@ function Mascotas() {
     }
 
     try {
-      const { error } = await supabase.from("mascotas").delete().eq("mascota_id", mascotaId);
+      const { error } = await supabase
+        .from("mascotas")
+        .delete()
+        .eq("mascota_id", mascotaId);
 
       if (error) throw error;
       alert("Mascota eliminada exitosamente");
@@ -275,7 +278,11 @@ function Mascotas() {
                 <MDTypography variant="h6" color="white">
                   Gestión de Mascotas
                 </MDTypography>
-                <MDButton variant="contained" color="white" onClick={() => handleOpenDialog()}>
+                <MDButton
+                  variant="contained"
+                  color="white"
+                  onClick={() => handleOpenDialog()}
+                >
                   <Icon>add</Icon>&nbsp; Nueva Mascota
                 </MDButton>
               </MDBox>
@@ -301,7 +308,12 @@ function Mascotas() {
         </Grid>
       </MDBox>
 
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+      <Dialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>
           <MDTypography variant="h5">
             {editMode ? "Editar Mascota" : "Nueva Mascota"}
@@ -342,8 +354,12 @@ function Mascotas() {
                   >
                     <MenuItem value="">Seleccione un cliente</MenuItem>
                     {clientes.map((cliente) => (
-                      <MenuItem key={cliente.cliente_id} value={cliente.cliente_id}>
-                        {cliente.nombres} {cliente.apellidos} - DNI: {cliente.num_doc}
+                      <MenuItem
+                        key={cliente.cliente_id}
+                        value={cliente.cliente_id}
+                      >
+                        {cliente.nombres} {cliente.apellidos} - DNI:{" "}
+                        {cliente.num_doc}
                       </MenuItem>
                     ))}
                   </Select>
@@ -429,7 +445,9 @@ function Mascotas() {
                   inputProps={{ maxLength: 3 }}
                   helperText={
                     formData.edad_meses
-                      ? `Equivalente: ${formatearEdad(parseInt(formData.edad_meses))}`
+                      ? `Equivalente: ${formatearEdad(
+                          parseInt(formData.edad_meses)
+                        )}`
                       : "Ingrese edad en meses"
                   }
                 />

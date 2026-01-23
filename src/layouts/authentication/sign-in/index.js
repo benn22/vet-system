@@ -38,7 +38,8 @@ function Basic() {
       // Buscar usuario por username
       const { data: usuarios, error: userError } = await supabase
         .from("usuarios")
-        .select(`
+        .select(
+          `
           usuario_id,
           nombre,
           apellido,
@@ -51,7 +52,8 @@ function Basic() {
               nombre_rol
             )
           )
-        `)
+        `
+        )
         .eq("username", username)
         .eq("estado", "activo")
         .single();
@@ -75,14 +77,13 @@ function Basic() {
         nombre: usuarios.nombre,
         apellido: usuarios.apellido,
         username: usuarios.username,
-        rol: usuarios.usuario_rol[0]?.roles?.nombre_rol || "Sin rol"
+        rol: usuarios.usuario_rol[0]?.roles?.nombre_rol || "Sin rol",
       };
 
       localStorage.setItem("user", JSON.stringify(userData));
 
       // Redirigir al dashboard
       navigate("/dashboard");
-
     } catch (err) {
       setError("Error al iniciar sesión: " + err.message);
     } finally {
@@ -148,18 +149,22 @@ function Basic() {
 
             {error && (
               <MDBox mb={2} mt={2}>
-                <MDTypography variant="caption" color="error" fontWeight="medium">
+                <MDTypography
+                  variant="caption"
+                  color="error"
+                  fontWeight="medium"
+                >
                   {error}
                 </MDTypography>
               </MDBox>
             )}
 
             <MDBox mt={4} mb={1}>
-              <MDButton 
-                variant="gradient" 
-                color="info" 
-                fullWidth 
-                type="submit" 
+              <MDButton
+                variant="gradient"
+                color="info"
+                fullWidth
+                type="submit"
                 disabled={loading}
               >
                 {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
@@ -168,7 +173,8 @@ function Basic() {
 
             <MDBox mt={3} mb={1} textAlign="center">
               <MDTypography variant="button" color="text">
-                Usuario de prueba: <strong>admin</strong> / Contraseña: <strong>admin123</strong>
+                Usuario de prueba: <strong>admin</strong> / Contraseña:{" "}
+                <strong>admin123</strong>
               </MDTypography>
             </MDBox>
           </MDBox>
