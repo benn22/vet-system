@@ -1,0 +1,91 @@
+// Material Dashboard 2 React layouts
+import Dashboard from "layouts/dashboard";
+import Tables from "layouts/tables";
+import Billing from "layouts/billing";
+import RTL from "layouts/rtl";
+import Notifications from "layouts/notifications";
+import Profile from "layouts/profile";
+import SignIn from "layouts/authentication/sign-in";
+import SignUp from "layouts/authentication/sign-up";
+
+// @mui icons
+import Icon from "@mui/material/Icon";
+import Clientes from "layouts/clientes";
+import Mascotas from "layouts/mascotas";
+
+const routes = [
+  {
+    type: "collapse",
+    name: "Dashboard",
+    key: "dashboard",
+    icon: <Icon fontSize="small">dashboard</Icon>,
+    route: "/dashboard",
+    component: <Dashboard />,
+  },
+  {
+    type: "collapse",
+    name: "Clientes",
+    key: "clientes",
+    icon: <Icon fontSize="small">people</Icon>,
+    route: "/clientes",
+    component: <Clientes />,
+  },
+  {
+    type: "collapse",
+    name: "Mascotas",
+    key: "mascotas",
+    icon: <Icon fontSize="small">pets</Icon>,
+    route: "/mascotas",
+    component: <Mascotas />,
+  },
+  {
+    type: "collapse",
+    name: "Citas",
+    key: "citas",
+    icon: <Icon fontSize="small">event</Icon>,
+    route: "/citas",
+    component: <RTL />,
+  },
+  {
+    type: "collapse",
+    name: "Historial Médico",
+    key: "historial",
+    icon: <Icon fontSize="small">medical_services</Icon>,
+    route: "/historial",
+    component: <Notifications />,
+  },
+  {
+    type: "collapse",
+    name: "Productos",
+    key: "productos",
+    icon: <Icon fontSize="small">inventory</Icon>,
+    route: "/productos",
+    component: <Profile />,
+  },
+  {
+    type: "collapse",
+    name: "Ventas",
+    key: "ventas",
+    icon: <Icon fontSize="small">shopping_cart</Icon>,
+    route: "/ventas",
+    component: <SignUp />,
+  },
+  {
+    type: "collapse",
+    name: "Usuarios",
+    key: "usuarios",
+    icon: <Icon fontSize="small">person</Icon>,
+    route: "/usuarios",
+    component: <SignIn />,
+  },
+  {
+    type: "collapse",
+    name: "Sign In",
+    key: "sign-in",
+    icon: <Icon fontSize="small">login</Icon>,
+    route: "/authentication/sign-in",
+    component: <SignIn />,
+  },
+];
+
+export default routes;
