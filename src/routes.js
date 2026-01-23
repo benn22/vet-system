@@ -14,6 +14,9 @@ import Clientes from "layouts/clientes";
 import Mascotas from "layouts/mascotas";
 import Citas from "layouts/citas";
 import Historial from "layouts/historial";
+import Productos from "layouts/productos";
+import Ventas from "layouts/ventas";
+import Usuarios from "layouts/usuarios";
 
 const routes = [
   {
@@ -62,7 +65,7 @@ const routes = [
     key: "productos",
     icon: <Icon fontSize="small">inventory</Icon>,
     route: "/productos",
-    component: <Profile />,
+    component: <Productos />,
   },
   {
     type: "collapse",
@@ -70,7 +73,7 @@ const routes = [
     key: "ventas",
     icon: <Icon fontSize="small">shopping_cart</Icon>,
     route: "/ventas",
-    component: <SignUp />,
+    component: <Ventas />,
   },
   {
     type: "collapse",
@@ -78,15 +81,7 @@ const routes = [
     key: "usuarios",
     icon: <Icon fontSize="small">person</Icon>,
     route: "/usuarios",
-    component: <SignIn />,
-  },
-  {
-    type: "collapse",
-    name: "Sign In",
-    key: "sign-in",
-    icon: <Icon fontSize="small">login</Icon>,
-    route: "/authentication/sign-in",
-    component: <SignIn />,
+    component: <Usuarios />,
   },
 ];
 

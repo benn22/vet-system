@@ -63,14 +63,34 @@ export default function App() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  // Verificar autenticación
+  // Estado de autenticación
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Verificar autenticación
   useEffect(() => {
-    const user = localStorage.getItem("user");
-    setIsAuthenticated(!!user);
-    setLoading(false);
+    const checkAuth = () => {
+      const user = localStorage.getItem("user");
+      if (user) {
+        try {
+          const userData = JSON.parse(user);
+          setIsAuthenticated(true);
+          setUserRole(userData.rol);
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+          localStorage.removeItem("user");
+          setIsAuthenticated(false);
+          setUserRole(null);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setUserRole(null);
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
   }, [pathname]);
 
   // Cache for the rtl
@@ -113,6 +133,31 @@ export default function App() {
     document.documentElement.scrollTop = 0;
     document.scrollingElement.scrollTop = 0;
   }, [pathname]);
+
+  // Filtrar rutas según el rol del usuario
+  const getFilteredRoutes = () => {
+    if (!userRole) return [];
+
+    return routes.filter((route) => {
+      // Rutas públicas
+      if (route.key === "sign-in") return true;
+
+      // Rutas solo para administradores
+      if (route.key === "usuarios" && userRole !== "Administrador") {
+        return false;
+      }
+
+      // Rutas solo para recepcionistas y administradores
+      if (
+        (route.key === "ventas" || route.key === "productos") &&
+        userRole === "Veterinario"
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  };
 
   const getRoutes = (allRoutes) =>
     allRoutes.map((route) => {
@@ -159,27 +204,54 @@ export default function App() {
   );
 
   if (loading) {
-    return <div>Cargando...</div>;
+    return (
+      <ThemeProvider theme={darkMode ? themeDark : theme}>
+        <CssBaseline />
+        <MDBox
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="100vh"
+        >
+          Cargando...
+        </MDBox>
+      </ThemeProvider>
+    );
   }
 
-  // Redirigir a login si no está autenticado
+  // Si no está autenticado y no está en login, redirigir
   if (!isAuthenticated && pathname !== "/authentication/sign-in") {
     return (
       <ThemeProvider theme={darkMode ? themeDark : theme}>
         <CssBaseline />
         <Routes>
-          <Route path="*" element={<Navigate to="/authentication/sign-in" />} />
+          <Route
+            path="*"
+            element={<Navigate to="/authentication/sign-in" replace />}
+          />
           {getRoutes(routes)}
         </Routes>
       </ThemeProvider>
     );
   }
 
+  // Si está autenticado y está en login, redirigir al dashboard
+  if (isAuthenticated && pathname === "/authentication/sign-in") {
+    return (
+      <ThemeProvider theme={darkMode ? themeDark : theme}>
+        <CssBaseline />
+        <Navigate to="/dashboard" replace />
+      </ThemeProvider>
+    );
+  }
+
+  const filteredRoutes = getFilteredRoutes();
+
   return direction === "rtl" ? (
     <CacheProvider value={rtlCache}>
       <ThemeProvider theme={darkMode ? themeDarkRTL : themeRTL}>
         <CssBaseline />
-        {layout === "dashboard" && (
+        {layout === "dashboard" && isAuthenticated && (
           <>
             <Sidenav
               color={sidenavColor}
@@ -189,7 +261,7 @@ export default function App() {
                   : brandWhite
               }
               brandName="Veterinaria Sys"
-              routes={routes}
+              routes={filteredRoutes}
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
             />
@@ -207,7 +279,7 @@ export default function App() {
   ) : (
     <ThemeProvider theme={darkMode ? themeDark : theme}>
       <CssBaseline />
-      {layout === "dashboard" && (
+      {layout === "dashboard" && isAuthenticated && (
         <>
           <Sidenav
             color={sidenavColor}
@@ -217,7 +289,7 @@ export default function App() {
                 : brandWhite
             }
             brandName="Veterinaria Sys"
-            routes={routes}
+            routes={filteredRoutes}
             onMouseEnter={handleOnMouseEnter}
             onMouseLeave={handleOnMouseLeave}
           />

@@ -483,6 +483,9 @@ function Mascotas() {
                     <MenuItem value="Manchado">Manchado</MenuItem>
                     <MenuItem value="Tricolor">Tricolor</MenuItem>
                     <MenuItem value="Bicolor">Bicolor</MenuItem>
+                    <MenuItem value="Amarillo">Amarillo</MenuItem>
+                    <MenuItem value="Verde">Verde</MenuItem>
+                    <MenuItem value="Azul">Azul</MenuItem>
                     <MenuItem value="Otro">Otro</MenuItem>
                   </Select>
                 </FormControl>
