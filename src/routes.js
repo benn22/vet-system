@@ -12,6 +12,8 @@ import SignUp from "layouts/authentication/sign-up";
 import Icon from "@mui/material/Icon";
 import Clientes from "layouts/clientes";
 import Mascotas from "layouts/mascotas";
+import Citas from "layouts/citas";
+import Historial from "layouts/historial";
 
 const routes = [
   {
@@ -44,7 +46,7 @@ const routes = [
     key: "citas",
     icon: <Icon fontSize="small">event</Icon>,
     route: "/citas",
-    component: <RTL />,
+    component: <Citas />,
   },
   {
     type: "collapse",
@@ -52,7 +54,7 @@ const routes = [
     key: "historial",
     icon: <Icon fontSize="small">medical_services</Icon>,
     route: "/historial",
-    component: <Notifications />,
+    component: <Historial />,
   },
   {
     type: "collapse",
