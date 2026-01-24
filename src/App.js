@@ -72,6 +72,7 @@ export default function App() {
   useEffect(() => {
     const checkAuth = () => {
       const user = localStorage.getItem("user");
+
       if (user) {
         try {
           const userData = JSON.parse(user);
@@ -91,7 +92,7 @@ export default function App() {
     };
 
     checkAuth();
-  }, [pathname]);
+  }, []);
 
   // Cache for the rtl
   useMemo(() => {
@@ -219,28 +220,30 @@ export default function App() {
     );
   }
 
-  // Si no está autenticado y no está en login, redirigir
-  if (!isAuthenticated && pathname !== "/authentication/sign-in") {
+  // Si está autenticado y está en login, redirigir al dashboard
+  // Si no está autenticado, solo mostrar rutas de autenticación
+  if (!isAuthenticated) {
+    const signInRoute = routes.find((r) => r.key === "sign-in");
+    const logoutRoute = routes.find((r) => r.key === "logout");
+
     return (
       <ThemeProvider theme={darkMode ? themeDark : theme}>
         <CssBaseline />
         <Routes>
+          {signInRoute && (
+            <Route
+              path="/authentication/sign-in"
+              element={signInRoute.component}
+            />
+          )}
+          {logoutRoute && (
+            <Route path="/logout" element={logoutRoute.component} />
+          )}
           <Route
             path="*"
             element={<Navigate to="/authentication/sign-in" replace />}
           />
-          {getRoutes(routes)}
         </Routes>
-      </ThemeProvider>
-    );
-  }
-
-  // Si está autenticado y está en login, redirigir al dashboard
-  if (isAuthenticated && pathname === "/authentication/sign-in") {
-    return (
-      <ThemeProvider theme={darkMode ? themeDark : theme}>
-        <CssBaseline />
-        <Navigate to="/dashboard" replace />
       </ThemeProvider>
     );
   }

@@ -63,13 +63,22 @@ function DashboardNavbar({ absolute, light, isMini }) {
 
   // Obtener datos del usuario
   const [userData, setUserData] = useState(null);
-
-  useEffect(() => {
+  //Modificacion -> Mejora de este bloque
+  /*   useEffect(() => {
     const user = localStorage.getItem("user");
     if (user) {
       setUserData(JSON.parse(user));
     }
-  }, []);
+  }, []); */
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (user) {
+      setUserData(JSON.parse(user));
+    } else {
+      //Si no hay usuario, forzar logout limpio
+      navigate("/logout");
+    }
+  }, [navigate]);
 
   useEffect(() => {
     if (fixedNavbar) {
@@ -99,8 +108,9 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const handleCloseMenu = () => setOpenMenu(false);
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    window.location.href = "/authentication/sign-in";
+    console.log("Ejecutando logout..."); // Para debug
+    handleCloseMenu(); // Cerrar el menú primero
+    navigate("/logout");
   };
 
   const iconsStyle = ({
@@ -240,7 +250,18 @@ function DashboardNavbar({ absolute, light, isMini }) {
                   </MDBox>
                 </MenuItem>
                 <Divider />
-                <MenuItem onClick={handleLogout}>
+                <MenuItem
+                  //Modificacion -> Cambio del onClick
+                  /*
+                  onClick={() => {
+                    console.log("Click en cerrar sesión");
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.replace("/authentication/sign-in");
+                  }}
+                    */
+                  onClick={handleLogout}
+                >
                   <MDBox display="flex" alignItems="center" color="error">
                     <Icon color="error">logout</Icon>
                     <MDTypography

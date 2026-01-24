@@ -17,6 +17,7 @@ import Historial from "layouts/historial";
 import Productos from "layouts/productos";
 import Ventas from "layouts/ventas";
 import Usuarios from "layouts/usuarios";
+import Logout from "layouts/authentication/logout";
 
 const routes = [
   {
@@ -82,6 +83,20 @@ const routes = [
     icon: <Icon fontSize="small">person</Icon>,
     route: "/usuarios",
     component: <Usuarios />,
+  },
+  {
+    type: "route",
+    name: "Logout",
+    key: "logout",
+    route: "/logout",
+    component: <Logout />,
+  },
+  {
+    type: "authentication",
+    name: "Sign In",
+    key: "sign-in",
+    route: "/authentication/sign-in",
+    component: <SignIn />,
   },
 ];
 

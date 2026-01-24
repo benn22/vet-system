@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../../supabaseClient";
 
@@ -27,9 +27,20 @@ function Basic() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  //Modificacion -> Se importo useEffect
+  //Modificacion -> Borrar esto
+  /*
+  useEffect(() => {
+    const isAuth = localStorage.getItem("isAuthenticated");
+    if (isAuth) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
+  */
+
   const handleSetRememberMe = () => setRememberMe(!rememberMe);
 
-  const handleLogin = async (e) => {
+  /*   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -81,6 +92,79 @@ function Basic() {
       };
 
       localStorage.setItem("user", JSON.stringify(userData));
+      //Modificacion -> Guardar una bandera de autenticación
+      localStorage.setItem("isAuthenticated", "true");
+      //Pausa logica
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 0);
+
+      // Redirigir al dashboard
+      navigate("/dashboard");
+    } catch (err) {
+      setError("Error al iniciar sesión: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }; */
+  const handleLogin = async () => {
+    //e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      // Buscar usuario por username
+      const { data: usuarios, error: userError } = await supabase
+        .from("usuarios")
+        .select(
+          `
+          usuario_id,
+          nombre,
+          apellido,
+          username,
+          password,
+          estado,
+          usuario_rol (
+            roles (
+              rol_id,
+              nombre_rol
+            )
+          )
+        `
+        )
+        .eq("username", username)
+        .eq("estado", "activo")
+        .single();
+
+      if (userError || !usuarios) {
+        setError("Usuario no encontrado o inactivo");
+        setLoading(false);
+        return;
+      }
+
+      // Verificar contraseña
+      if (usuarios.password !== password) {
+        setError("Contraseña incorrecta");
+        setLoading(false);
+        return;
+      }
+
+      // Guardar datos del usuario en localStorage
+      const userData = {
+        usuario_id: usuarios.usuario_id,
+        nombre: usuarios.nombre,
+        apellido: usuarios.apellido,
+        username: usuarios.username,
+        rol: usuarios.usuario_rol[0]?.roles?.nombre_rol || "Sin rol",
+      };
+
+      localStorage.setItem("user", JSON.stringify(userData));
+      //Modificacion -> Guardar una bandera de autenticación
+      localStorage.setItem("isAuthenticated", "true");
+      //Pausa logica
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 0);
 
       // Redirigir al dashboard
       navigate("/dashboard");
@@ -113,7 +197,7 @@ function Basic() {
           </MDTypography>
         </MDBox>
         <MDBox pt={4} pb={3} px={3}>
-          <MDBox component="form" role="form" onSubmit={handleLogin}>
+          <MDBox /* component="form" role="form" onSubmit={handleLogin} */>
             <MDBox mb={2}>
               <MDInput
                 type="text"
@@ -160,7 +244,7 @@ function Basic() {
             )}
 
             <MDBox mt={4} mb={1}>
-              <MDButton
+              {/* <MDButton
                 variant="gradient"
                 color="info"
                 fullWidth
@@ -168,6 +252,9 @@ function Basic() {
                 disabled={loading}
               >
                 {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
+              </MDButton> */}
+              <MDButton type="submit" disabled={loading}>
+                {loading ? "Ingresando..." : "Login"}
               </MDButton>
             </MDBox>
 
