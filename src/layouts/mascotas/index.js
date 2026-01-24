@@ -13,6 +13,9 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
+//Importaciones nuevas para el autocompletado en el campo del dueño
+import Autocomplete from "@mui/material/Autocomplete";
+import TextField from "@mui/material/TextField";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -33,6 +36,8 @@ function Mascotas() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedMascota, setSelectedMascota] = useState(null);
+  // Estado para los datos del formulario
+  const [selectedCliente, setSelectedCliente] = useState(null);
   const [formData, setFormData] = useState({
     nombre: "",
     especie: "",
@@ -109,6 +114,11 @@ function Mascotas() {
         color: mascota.color || "",
         cliente_id: mascota.cliente_id,
       });
+      //Buscar y establecer el cliente seleccionado
+      const clienteActual = clientes.find(
+        (c) => c.cliente_id === mascota.cliente_id
+      );
+      setSelectedCliente(clienteActual || null);
     } else {
       setEditMode(false);
       setSelectedMascota(null);
@@ -129,6 +139,7 @@ function Mascotas() {
     setDialogOpen(false);
     setEditMode(false);
     setSelectedMascota(null);
+    setSelectedCliente(null);
   };
 
   const handleInputChange = (e) => {
@@ -176,7 +187,10 @@ function Mascotas() {
     }
 
     try {
-      const { error } = await supabase.from("mascotas").delete().eq("mascota_id", mascotaId);
+      const { error } = await supabase
+        .from("mascotas")
+        .delete()
+        .eq("mascota_id", mascotaId);
 
       if (error) throw error;
       alert("Mascota eliminada exitosamente");
@@ -275,7 +289,11 @@ function Mascotas() {
                 <MDTypography variant="h6" color="white">
                   Gestión de Mascotas
                 </MDTypography>
-                <MDButton variant="contained" color="white" onClick={() => handleOpenDialog()}>
+                <MDButton
+                  variant="contained"
+                  color="white"
+                  onClick={() => handleOpenDialog()}
+                >
                   <Icon>add</Icon>&nbsp; Nueva Mascota
                 </MDButton>
               </MDBox>
@@ -301,7 +319,12 @@ function Mascotas() {
         </Grid>
       </MDBox>
 
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+      <Dialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>
           <MDTypography variant="h5">
             {editMode ? "Editar Mascota" : "Nueva Mascota"}
@@ -322,32 +345,51 @@ function Mascotas() {
                 />
               </Grid>
               <Grid item xs={12} md={6}>
-                <FormControl fullWidth required>
-                  <InputLabel id="cliente-label" sx={{ top: "-7px" }}>
-                    Dueño
-                  </InputLabel>
-                  <Select
-                    labelId="cliente-label"
-                    name="cliente_id"
-                    value={formData.cliente_id}
-                    onChange={handleInputChange}
-                    label="Dueño"
-                    sx={{
-                      height: "45px",
-                      "& .MuiSelect-select": {
-                        paddingTop: "12px",
-                        paddingBottom: "12px",
-                      },
-                    }}
-                  >
-                    <MenuItem value="">Seleccione un cliente</MenuItem>
-                    {clientes.map((cliente) => (
-                      <MenuItem key={cliente.cliente_id} value={cliente.cliente_id}>
-                        {cliente.nombres} {cliente.apellidos} - DNI: {cliente.num_doc}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Autocomplete
+                  options={clientes}
+                  value={selectedCliente}
+                  onChange={(event, newValue) => {
+                    setSelectedCliente(newValue);
+                    setFormData({
+                      ...formData,
+                      cliente_id: newValue ? newValue.cliente_id : "",
+                    });
+                  }}
+                  getOptionLabel={(option) =>
+                    `${option.nombres} ${option.apellidos} - DNI: ${option.num_doc}`
+                  }
+                  isOptionEqualToValue={(option, value) =>
+                    option.cliente_id === value.cliente_id
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Buscar Dueño"
+                      placeholder="Escriba nombre o DNI..."
+                      required={!selectedCliente}
+                      sx={{
+                        "& .MuiInputBase-root": {
+                          height: "45px",
+                        },
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <li {...props} key={option.cliente_id}>
+                      <div>
+                        <div style={{ fontWeight: "bold" }}>
+                          {option.nombres} {option.apellidos}
+                        </div>
+                        <div style={{ fontSize: "0.85em", color: "#666" }}>
+                          DNI: {option.num_doc}{" "}
+                          {option.telefono && `• Tel: ${option.telefono}`}
+                        </div>
+                      </div>
+                    </li>
+                  )}
+                  noOptionsText="No se encontraron clientes"
+                  fullWidth
+                />
               </Grid>
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth required>
@@ -429,7 +471,9 @@ function Mascotas() {
                   inputProps={{ maxLength: 3 }}
                   helperText={
                     formData.edad_meses
-                      ? `Equivalente: ${formatearEdad(parseInt(formData.edad_meses))}`
+                      ? `Equivalente: ${formatearEdad(
+                          parseInt(formData.edad_meses)
+                        )}`
                       : "Ingrese edad en meses"
                   }
                 />
