@@ -16,6 +16,9 @@ import InputLabel from "@mui/material/InputLabel";
 //Importaciones nuevas para el autocompletado en el campo del dueño
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
+//Importaciones para la paginacion
+import TablePagination from "@mui/material/TablePagination";
+import InputAdornment from "@mui/material/InputAdornment";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -38,6 +41,10 @@ function Mascotas() {
   const [selectedMascota, setSelectedMascota] = useState(null);
   // Estado para los datos del formulario
   const [selectedCliente, setSelectedCliente] = useState(null);
+  //Estado para la paginacion
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [formData, setFormData] = useState({
     nombre: "",
     especie: "",
@@ -201,6 +208,46 @@ function Mascotas() {
     }
   };
 
+  // Función para filtrar mascotas
+  const filteredMascotas = mascotas.filter((mascota) => {
+    const searchLower = searchTerm.toLowerCase();
+    const nombreMascota = mascota.nombre?.toLowerCase() || "";
+    const nombreDueno = mascota.clientes
+      ? `${mascota.clientes.nombres} ${mascota.clientes.apellidos}`.toLowerCase()
+      : "";
+    const especie = mascota.especie?.toLowerCase() || "";
+    const raza = mascota.raza?.toLowerCase() || "";
+
+    return (
+      nombreMascota.includes(searchLower) ||
+      nombreDueno.includes(searchLower) ||
+      especie.includes(searchLower) ||
+      raza.includes(searchLower)
+    );
+  });
+
+  // Función para obtener mascotas paginadas
+  const paginatedMascotas = filteredMascotas.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Handlers para paginación
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Handler para búsqueda
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+    setPage(0); // Volver a la primera página al buscar
+  };
+
   const columns = [
     { Header: "Nombre", accessor: "nombre", width: "15%" },
     { Header: "Especie", accessor: "especie", width: "10%" },
@@ -211,7 +258,7 @@ function Mascotas() {
     { Header: "Acciones", accessor: "acciones", width: "12%" },
   ];
 
-  const rows = mascotas.map((mascota) => ({
+  const rows = paginatedMascotas.map((mascota) => ({
     nombre: (
       <MDTypography variant="caption" color="text" fontWeight="medium">
         {mascota.nombre}
@@ -282,20 +329,63 @@ function Mascotas() {
                 bgColor="info"
                 borderRadius="lg"
                 coloredShadow="info"
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
               >
-                <MDTypography variant="h6" color="white">
-                  Gestión de Mascotas
-                </MDTypography>
-                <MDButton
-                  variant="contained"
-                  color="white"
-                  onClick={() => handleOpenDialog()}
+                <MDBox
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={2}
                 >
-                  <Icon>add</Icon>&nbsp; Nueva Mascota
-                </MDButton>
+                  <MDTypography variant="h6" color="white">
+                    Gestión de Mascotas
+                  </MDTypography>
+                  <MDButton
+                    variant="contained"
+                    color="white"
+                    onClick={() => handleOpenDialog()}
+                  >
+                    <Icon>add</Icon>&nbsp; Nueva Mascota
+                  </MDButton>
+                </MDBox>
+
+                {/* Campo de búsqueda */}
+                <MDBox>
+                  <TextField
+                    placeholder="Buscar por nombre de mascota, dueño, especie o raza..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Icon sx={{ color: "white" }}>search</Icon>
+                        </InputAdornment>
+                      ),
+                      sx: {
+                        backgroundColor: "rgba(255, 255, 255, 0.2)",
+                        color: "white",
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "rgba(255, 255, 255, 0.3)",
+                        },
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "rgba(255, 255, 255, 0.5)",
+                        },
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "white",
+                        },
+                        "& input": {
+                          color: "white",
+                        },
+                        "& input::placeholder": {
+                          color: "rgba(255, 255, 255, 0.7)",
+                          opacity: 1,
+                        },
+                      },
+                    }}
+                  />
+                </MDBox>
               </MDBox>
               <MDBox pt={3}>
                 {loading ? (
@@ -313,6 +403,44 @@ function Mascotas() {
                     noEndBorder
                   />
                 )}
+                {/* Paginación */}
+                <MDBox
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  p={3}
+                >
+                  <MDTypography variant="caption" color="text">
+                    Mostrando {page * rowsPerPage + 1} a{" "}
+                    {Math.min(
+                      (page + 1) * rowsPerPage,
+                      filteredMascotas.length
+                    )}{" "}
+                    de {filteredMascotas.length} mascotas
+                    {searchTerm && ` (filtradas de ${mascotas.length} totales)`}
+                  </MDTypography>
+                  <TablePagination
+                    component="div"
+                    count={filteredMascotas.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25, 50, 100]}
+                    labelRowsPerPage="Filas por página:"
+                    labelDisplayedRows={({ from, to, count }) =>
+                      `${from}-${to} de ${
+                        count !== -1 ? count : `más de ${to}`
+                      }`
+                    }
+                    sx={{
+                      "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+                        {
+                          margin: 0,
+                        },
+                    }}
+                  />
+                </MDBox>
               </MDBox>
             </Card>
           </Grid>
