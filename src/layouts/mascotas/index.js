@@ -364,8 +364,10 @@ function Mascotas() {
                         </InputAdornment>
                       ),
                       sx: {
-                        backgroundColor: "rgba(255, 255, 255, 0.2)",
-                        color: "white",
+                        /* backgroundColor: "rgba(255, 255, 255, 0.2)",
+                        color: "white", */
+                        backgroundColor: "rgba(255, 255, 255, 0.8)",
+                        color: "black",
                         "& .MuiOutlinedInput-notchedOutline": {
                           borderColor: "rgba(255, 255, 255, 0.3)",
                         },
@@ -379,7 +381,8 @@ function Mascotas() {
                           color: "white",
                         },
                         "& input::placeholder": {
-                          color: "rgba(255, 255, 255, 0.7)",
+                          /* color: "rgba(255, 255, 255, 0.7)", */
+                          color: "rgba(0, 0, 0, 0.6)",
                           opacity: 1,
                         },
                       },
