@@ -14,6 +14,10 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import Chip from "@mui/material/Chip";
+//Import para los filtros
+import TablePagination from "@mui/material/TablePagination";
+import InputAdornment from "@mui/material/InputAdornment";
+import TextField from "@mui/material/TextField";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -26,6 +30,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import DataTable from "examples/Tables/DataTable";
+import { red } from "@mui/material/colors";
 
 function Citas() {
   const [citas, setCitas] = useState([]);
@@ -34,6 +39,12 @@ function Citas() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedCita, setSelectedCita] = useState(null);
+  //State para filtros avanzados
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [filtroEstado, setFiltroEstado] = useState("todos");
+  const [fechaInicio, setFechaInicio] = useState("");
+  const [fechaFin, setFechaFin] = useState("");
   const [formData, setFormData] = useState({
     fecha: "",
     hora: "",
@@ -219,6 +230,65 @@ function Citas() {
     }
   };
 
+  // Función para filtrar citas
+  const filteredCitas = citas.filter((cita) => {
+    // Filtro por estado
+    if (filtroEstado !== "todos" && cita.estado !== filtroEstado) {
+      return false;
+    }
+
+    // Filtro por rango de fechas
+    if (fechaInicio && cita.fecha < fechaInicio) {
+      return false;
+    }
+    if (fechaFin && cita.fecha > fechaFin) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Función para obtener citas paginadas
+  const paginatedCitas = filteredCitas.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Handlers para paginación
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Handler para filtro de estado
+  const handleEstadoChange = (event) => {
+    setFiltroEstado(event.target.value);
+    setPage(0);
+  };
+
+  // Handlers para filtros de fecha
+  const handleFechaInicioChange = (event) => {
+    setFechaInicio(event.target.value);
+    setPage(0);
+  };
+
+  const handleFechaFinChange = (event) => {
+    setFechaFin(event.target.value);
+    setPage(0);
+  };
+
+  // Función para limpiar filtros
+  const limpiarFiltros = () => {
+    setFiltroEstado("todos");
+    setFechaInicio("");
+    setFechaFin("");
+    setPage(0);
+  };
+
   const columns = [
     { Header: "Fecha", accessor: "fecha", width: "12%" },
     { Header: "Hora", accessor: "hora", width: "10%" },
@@ -229,7 +299,7 @@ function Citas() {
     { Header: "Acciones", accessor: "acciones", width: "8%" },
   ];
 
-  const rows = citas.map((cita) => ({
+  const rows = paginatedCitas.map((cita) => ({
     fecha: (
       <MDTypography variant="caption" color="text" fontWeight="medium">
         {formatearFecha(cita.fecha)}
@@ -315,20 +385,186 @@ function Citas() {
                 bgColor="info"
                 borderRadius="lg"
                 coloredShadow="info"
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
               >
-                <MDTypography variant="h6" color="white">
-                  Gestión de Citas
-                </MDTypography>
-                <MDButton
-                  variant="contained"
-                  color="white"
-                  onClick={() => handleOpenDialog()}
+                <MDBox
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={3}
                 >
-                  <Icon>add</Icon>&nbsp; Nueva Cita
-                </MDButton>
+                  <MDTypography variant="h6" color="white">
+                    Gestión de Citas
+                  </MDTypography>
+                  <MDButton
+                    variant="contained"
+                    color="white"
+                    onClick={() => handleOpenDialog()}
+                  >
+                    <Icon>add</Icon>&nbsp; Nueva Cita
+                  </MDButton>
+                </MDBox>
+
+                {/* Filtros */}
+                <Grid container spacing={2}>
+                  {/* Filtro por Estado */}
+                  <Grid item xs={12} sm={6} md={3}>
+                    <MDBox>
+                      <MDTypography
+                        variant="caption"
+                        fontWeight="bold"
+                        color="white"
+                        sx={{ display: "block", mb: 0.5 }}
+                      >
+                        Estado
+                      </MDTypography>
+                      <FormControl fullWidth size="small">
+                        <Select
+                          value={filtroEstado}
+                          onChange={handleEstadoChange}
+                          displayEmpty
+                          sx={{
+                            height: "40px",
+                            backgroundColor: "rgba(255, 255, 255, 0.8)",
+                            color: "black",
+                            "& .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "rgba(255, 255, 255, 0.3)",
+                            },
+                            "&:hover .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "rgba(255, 255, 255, 0.5)",
+                            },
+                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "white",
+                            },
+                            "& .MuiSvgIcon-root": {
+                              color: "black",
+                            },
+                            "& .MuiSelect-select": {
+                              paddingTop: "8px",
+                              paddingBottom: "8px",
+                              color: "black",
+                            },
+                          }}
+                        >
+                          <MenuItem value="todos">Todos los estados</MenuItem>
+                          <MenuItem value="pendiente">Pendiente</MenuItem>
+                          <MenuItem value="atendida">Atendida</MenuItem>
+                          <MenuItem value="cancelada">Cancelada</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </MDBox>
+                  </Grid>
+
+                  {/* Filtro por Fecha Inicio */}
+                  <Grid item xs={12} sm={6} md={3}>
+                    <MDBox>
+                      <MDTypography
+                        variant="caption"
+                        fontWeight="bold"
+                        color="white"
+                        sx={{ display: "block", mb: 0.5 }}
+                      >
+                        Fecha Inicio
+                      </MDTypography>
+                      <TextField
+                        type="date"
+                        value={fechaInicio}
+                        onChange={handleFechaInicioChange}
+                        fullWidth
+                        size="small"
+                        sx={{
+                          "& .MuiInputBase-root": {
+                            height: "40px",
+                            backgroundColor: "rgba(255, 255, 255, 0.8)",
+                          },
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "rgba(255, 255, 255, 0.3)",
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "rgba(255, 255, 255, 0.5)",
+                          },
+                          "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+                            {
+                              borderColor: "white",
+                            },
+                          "& input": {
+                            color: "black",
+                            paddingTop: "8px",
+                            paddingBottom: "8px",
+                          },
+                          "& .MuiSvgIcon-root": {
+                            color: "black",
+                          },
+                        }}
+                      />
+                    </MDBox>
+                  </Grid>
+
+                  {/* Filtro por Fecha Fin */}
+                  <Grid item xs={12} sm={6} md={3}>
+                    <MDBox>
+                      <MDTypography
+                        variant="caption"
+                        fontWeight="bold"
+                        color="white"
+                        sx={{ display: "block", mb: 0.5 }}
+                      >
+                        Fecha Fin
+                      </MDTypography>
+                      <TextField
+                        type="date"
+                        value={fechaFin}
+                        onChange={handleFechaFinChange}
+                        fullWidth
+                        size="small"
+                        sx={{
+                          "& .MuiInputBase-root": {
+                            height: "40px",
+                            backgroundColor: "rgba(255, 255, 255, 0.8)",
+                          },
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "rgba(255, 255, 255, 0.3)",
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "rgba(255, 255, 255, 0.5)",
+                          },
+                          "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+                            {
+                              borderColor: "white",
+                            },
+                          "& input": {
+                            color: "black",
+                            paddingTop: "8px",
+                            paddingBottom: "8px",
+                          },
+                          "& .MuiSvgIcon-root": {
+                            color: "black",
+                          },
+                        }}
+                      />
+                    </MDBox>
+                  </Grid>
+
+                  {/* Botón Limpiar Filtros */}
+                  <Grid item xs={12} sm={6} md={3}>
+                    <MDBox>
+                      <MDTypography
+                        variant="caption"
+                        sx={{ display: "block", mb: 0.5, visibility: "hidden" }}
+                      >
+                        &nbsp;
+                      </MDTypography>
+                      <MDButton
+                        variant="outlined"
+                        color="white"
+                        fullWidth
+                        onClick={limpiarFiltros}
+                        sx={{ height: "40px" }}
+                      >
+                        <Icon>clear</Icon>&nbsp; Limpiar Filtros
+                      </MDButton>
+                    </MDBox>
+                  </Grid>
+                </Grid>
               </MDBox>
               <MDBox pt={3}>
                 {loading ? (
@@ -346,6 +582,44 @@ function Citas() {
                     noEndBorder
                   />
                 )}
+
+                {/* Paginación */}
+                <MDBox
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  p={3}
+                >
+                  <MDTypography variant="caption" color="text">
+                    Mostrando{" "}
+                    {paginatedCitas.length > 0 ? page * rowsPerPage + 1 : 0} a{" "}
+                    {Math.min((page + 1) * rowsPerPage, filteredCitas.length)}{" "}
+                    de {filteredCitas.length} citas
+                    {(filtroEstado !== "todos" || fechaInicio || fechaFin) &&
+                      ` (filtradas de ${citas.length} totales)`}
+                  </MDTypography>
+                  <TablePagination
+                    component="div"
+                    count={filteredCitas.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                    labelRowsPerPage="Filas por página:"
+                    labelDisplayedRows={({ from, to, count }) =>
+                      `${from}-${to} de ${
+                        count !== -1 ? count : `más de ${to}`
+                      }`
+                    }
+                    sx={{
+                      "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
+                        {
+                          margin: 0,
+                        },
+                    }}
+                  />
+                </MDBox>
               </MDBox>
             </Card>
           </Grid>
