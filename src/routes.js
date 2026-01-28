@@ -17,6 +17,7 @@ import Historial from "layouts/historial";
 import Productos from "layouts/productos";
 import Ventas from "layouts/ventas";
 import Usuarios from "layouts/usuarios";
+import Mantenedores from "layouts/mantenedores";
 
 const routes = [
   {
@@ -82,6 +83,14 @@ const routes = [
     icon: <Icon fontSize="small">person</Icon>,
     route: "/usuarios",
     component: <Usuarios />,
+  },
+  {
+    type: "collapse",
+    name: "Mantenedores",
+    key: "mantenedores",
+    icon: <Icon fontSize="small">settings</Icon>,
+    route: "/mantenedores",
+    component: <Mantenedores />,
   },
 ];
 

@@ -45,6 +45,10 @@ function Mascotas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [especies, setEspecies] = useState([]); // <-- NUEVO
+  const [razas, setRazas] = useState([]); // <-- NUEVO
+  const [razasFiltradas, setRazasFiltradas] = useState([]); // <-- NUEVO
+  const [colores, setColores] = useState([]); // <-- NUEVO
   const [formData, setFormData] = useState({
     nombre: "",
     especie: "",
@@ -75,31 +79,61 @@ function Mascotas() {
     try {
       setLoading(true);
 
+      // Cargar mascotas con sus dueños
       const { data: mascotasData, error: mascotasError } = await supabase
         .from("mascotas")
         .select(
           `
-          *,
-          clientes (
-            cliente_id,
-            nombres,
-            apellidos,
-            num_doc
-          )
-        `
+        *,
+        clientes (
+          nombres,
+          apellidos
+        )
+      `
         )
         .order("fecha_registro", { ascending: false });
 
       if (mascotasError) throw mascotasError;
       setMascotas(mascotasData || []);
 
+      // Cargar clientes
       const { data: clientesData, error: clientesError } = await supabase
         .from("clientes")
-        .select("cliente_id, nombres, apellidos, num_doc")
+        .select("*")
         .order("nombres", { ascending: true });
 
       if (clientesError) throw clientesError;
       setClientes(clientesData || []);
+
+      // Cargar especies activas
+      const { data: especiesData, error: especiesError } = await supabase
+        .from("especies")
+        .select("*")
+        .eq("estado", "activo")
+        .order("nombre", { ascending: true });
+
+      if (especiesError) throw especiesError;
+      setEspecies(especiesData || []);
+
+      // Cargar todas las razas activas
+      const { data: razasData, error: razasError } = await supabase
+        .from("razas")
+        .select("*, especies(nombre)")
+        .eq("estado", "activo")
+        .order("nombre", { ascending: true });
+
+      if (razasError) throw razasError;
+      setRazas(razasData || []);
+
+      // Cargar colores activos
+      const { data: coloresData, error: coloresError } = await supabase
+        .from("colores")
+        .select("*")
+        .eq("estado", "activo")
+        .order("nombre", { ascending: true });
+
+      if (coloresError) throw coloresError;
+      setColores(coloresData || []);
     } catch (error) {
       console.error("Error al cargar datos:", error);
       alert("Error al cargar datos: " + error.message);
@@ -121,14 +155,30 @@ function Mascotas() {
         color: mascota.color || "",
         cliente_id: mascota.cliente_id,
       });
-      //Buscar y establecer el cliente seleccionado
+
+      // Buscar y establecer el cliente seleccionado
       const clienteActual = clientes.find(
         (c) => c.cliente_id === mascota.cliente_id
       );
       setSelectedCliente(clienteActual || null);
+
+      // Filtrar razas según la especie de la mascota
+      if (mascota.especie) {
+        const especieObj = especies.find(
+          (esp) => esp.nombre === mascota.especie
+        );
+        if (especieObj) {
+          const razasDeLaEspecie = razas.filter(
+            (raza) => raza.especie_id === especieObj.especie_id
+          );
+          setRazasFiltradas(razasDeLaEspecie);
+        }
+      }
     } else {
       setEditMode(false);
       setSelectedMascota(null);
+      setSelectedCliente(null);
+      setRazasFiltradas([]);
       setFormData({
         nombre: "",
         especie: "",
@@ -154,6 +204,31 @@ function Mascotas() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleEspecieChange = (e) => {
+    const especieSeleccionada = e.target.value;
+
+    setFormData({
+      ...formData,
+      especie: especieSeleccionada,
+      raza: "", // Limpiar raza cuando cambia la especie
+    });
+
+    // Filtrar razas según la especie seleccionada
+    if (especieSeleccionada) {
+      const especieObj = especies.find(
+        (esp) => esp.nombre === especieSeleccionada
+      );
+      if (especieObj) {
+        const razasDeLaEspecie = razas.filter(
+          (raza) => raza.especie_id === especieObj.especie_id
+        );
+        setRazasFiltradas(razasDeLaEspecie);
+      }
+    } else {
+      setRazasFiltradas([]);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -532,7 +607,7 @@ function Mascotas() {
                     labelId="especie-label"
                     name="especie"
                     value={formData.especie}
-                    onChange={handleInputChange}
+                    onChange={handleEspecieChange}
                     label="Especie"
                     sx={{
                       height: "45px",
@@ -543,24 +618,46 @@ function Mascotas() {
                     }}
                   >
                     <MenuItem value="">Seleccione especie</MenuItem>
-                    <MenuItem value="Perro">Perro</MenuItem>
-                    <MenuItem value="Gato">Gato</MenuItem>
-                    <MenuItem value="Ave">Ave</MenuItem>
-                    <MenuItem value="Conejo">Conejo</MenuItem>
-                    <MenuItem value="Hamster">Hamster</MenuItem>
-                    <MenuItem value="Otro">Otro</MenuItem>
+                    {especies.map((especie) => (
+                      <MenuItem key={especie.especie_id} value={especie.nombre}>
+                        {especie.nombre}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
               <Grid item xs={12} md={6}>
-                <MDInput
-                  type="text"
-                  label="Raza"
-                  name="raza"
-                  value={formData.raza}
-                  onChange={handleInputChange}
-                  fullWidth
-                />
+                <FormControl fullWidth>
+                  <InputLabel id="raza-label" sx={{ top: "-7px" }}>
+                    Raza
+                  </InputLabel>
+                  <Select
+                    labelId="raza-label"
+                    name="raza"
+                    value={formData.raza}
+                    onChange={handleInputChange}
+                    label="Raza"
+                    disabled={!formData.especie}
+                    sx={{
+                      height: "45px",
+                      "& .MuiSelect-select": {
+                        paddingTop: "12px",
+                        paddingBottom: "12px",
+                      },
+                    }}
+                  >
+                    <MenuItem value="">
+                      {formData.especie
+                        ? "Seleccione raza"
+                        : "Primero seleccione una especie"}
+                    </MenuItem>
+                    {razasFiltradas.map((raza) => (
+                      <MenuItem key={raza.raza_id} value={raza.nombre}>
+                        {raza.nombre}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Grid>
               <Grid item xs={12} md={4}>
                 <FormControl fullWidth>
@@ -630,18 +727,11 @@ function Mascotas() {
                     }}
                   >
                     <MenuItem value="">Seleccione color</MenuItem>
-                    <MenuItem value="Negro">Negro</MenuItem>
-                    <MenuItem value="Blanco">Blanco</MenuItem>
-                    <MenuItem value="Marrón">Marrón</MenuItem>
-                    <MenuItem value="Dorado">Dorado</MenuItem>
-                    <MenuItem value="Gris">Gris</MenuItem>
-                    <MenuItem value="Naranja">Naranja</MenuItem>
-                    <MenuItem value="Crema">Crema</MenuItem>
-                    <MenuItem value="Atigrado">Atigrado</MenuItem>
-                    <MenuItem value="Manchado">Manchado</MenuItem>
-                    <MenuItem value="Tricolor">Tricolor</MenuItem>
-                    <MenuItem value="Bicolor">Bicolor</MenuItem>
-                    <MenuItem value="Otro">Otro</MenuItem>
+                    {colores.map((color) => (
+                      <MenuItem key={color.color_id} value={color.nombre}>
+                        {color.nombre}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
