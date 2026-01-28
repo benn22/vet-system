@@ -476,6 +476,7 @@ function Mascotas() {
                 />
               </Grid>
               <Grid item xs={12} md={6}>
+                {/* eslint-disable-next-line react/jsx-props-no-spreading */}
                 <Autocomplete
                   options={clientes}
                   value={selectedCliente}

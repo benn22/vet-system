@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 // @mui material components
 import { ThemeProvider } from "@mui/material/styles";
@@ -51,17 +51,6 @@ export default function App() {
   const [onMouseEnter, setOnMouseEnter] = useState(false);
   const [rtlCache, setRtlCache] = useState(null);
   const { pathname } = useLocation();
-  const navigate = useNavigate();
-
-  // Verificar autenticación
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const user = localStorage.getItem("user");
-    setIsAuthenticated(!!user);
-    setLoading(false);
-  }, [pathname]);
 
   // Cache for the rtl
   useMemo(() => {
@@ -140,23 +129,6 @@ export default function App() {
     </MDBox>
   );
 
-  if (loading) {
-    return <div>Cargando...</div>;
-  }
-
-  // Redirigir a login si no está autenticado
-  if (!isAuthenticated && pathname !== "/authentication/sign-in") {
-    return (
-      <ThemeProvider theme={darkMode ? themeDark : theme}>
-        <CssBaseline />
-        <Routes>
-          <Route path="*" element={<Navigate to="/authentication/sign-in" />} />
-          {getRoutes(routes)}
-        </Routes>
-      </ThemeProvider>
-    );
-  }
-
   return direction === "rtl" ? (
     <CacheProvider value={rtlCache}>
       <ThemeProvider theme={darkMode ? themeDarkRTL : themeRTL}>
@@ -166,7 +138,7 @@ export default function App() {
             <Sidenav
               color={sidenavColor}
               brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
-              brandName="Veterinaria Sys"
+              brandName="Material Dashboard 2"
               routes={routes}
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
@@ -190,7 +162,7 @@ export default function App() {
           <Sidenav
             color={sidenavColor}
             brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
-            brandName="Veterinaria Sys"
+            brandName="Material Dashboard 2"
             routes={routes}
             onMouseEnter={handleOnMouseEnter}
             onMouseLeave={handleOnMouseLeave}
