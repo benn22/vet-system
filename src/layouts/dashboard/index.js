@@ -70,7 +70,7 @@ function Dashboard() {
 
       setCitasHoy(citasHoyData || []);
 
-      // Ventas del mes actual
+      // Ventas del mes actual (solo completadas)
       const primerDiaMes = new Date(
         new Date().getFullYear(),
         new Date().getMonth(),
@@ -81,6 +81,7 @@ function Dashboard() {
       const { data: ventasMesData } = await supabase
         .from("ventas")
         .select("total")
+        .eq("estado", "completada") // <-- SOLO VENTAS COMPLETADAS
         .gte("fecha", primerDiaMes);
 
       const totalVentasMes =
@@ -89,18 +90,19 @@ function Dashboard() {
           0
         ) || 0;
 
-      // Últimas 5 ventas
+      // Últimas 5 ventas (solo completadas)
       const { data: ventasRecientesData } = await supabase
         .from("ventas")
         .select(
           `
-          *,
-          clientes (
-            nombres,
-            apellidos
-          )
-        `
+    *,
+    clientes (
+      nombres,
+      apellidos
+    )
+  `
         )
+        .eq("estado", "completada") // <-- SOLO VENTAS COMPLETADAS
         .order("fecha", { ascending: false })
         .limit(5);
 

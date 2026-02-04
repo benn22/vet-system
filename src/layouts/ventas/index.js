@@ -34,6 +34,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import DataTable from "examples/Tables/DataTable";
+import Chip from "@mui/material/Chip";
 
 function Ventas() {
   const [ventas, setVentas] = useState([]);
@@ -44,6 +45,9 @@ function Ventas() {
   const [detalleDialogOpen, setDetalleDialogOpen] = useState(false);
   const [selectedVenta, setSelectedVenta] = useState(null);
   const [carrito, setCarrito] = useState([]);
+  const [seriesDisponibles, setSeriesDisponibles] = useState([]);
+  const [tipoComprobanteSeleccionado, setTipoComprobanteSeleccionado] =
+    useState("BOL");
   const [formData, setFormData] = useState({
     cliente_id: "",
     producto_id: "",
@@ -98,6 +102,16 @@ function Ventas() {
 
       if (productosError) throw productosError;
       setProductos(productosData || []);
+
+      // Cargar series de comprobantes activas
+      const { data: seriesData, error: seriesError } = await supabase
+        .from("series_comprobantes")
+        .select("*")
+        .eq("estado", "activo")
+        .order("tipo_comprobante", { ascending: true });
+
+      if (seriesError) throw seriesError;
+      setSeriesDisponibles(seriesData || []);
     } catch (error) {
       console.error("Error al cargar datos:", error);
       alert("Error al cargar datos: " + error.message);
@@ -242,7 +256,30 @@ function Ventas() {
       const userData = JSON.parse(localStorage.getItem("user"));
       const total = calcularTotal();
 
-      // Crear la venta
+      // Obtener la serie seleccionada para el tipo de comprobante
+      const serieActiva = seriesDisponibles.find(
+        (s) =>
+          s.tipo_comprobante === tipoComprobanteSeleccionado &&
+          s.estado === "activo"
+      );
+
+      if (!serieActiva) {
+        alert(`No hay serie activa para ${tipoComprobanteSeleccionado}`);
+        return;
+      }
+
+      // Obtener siguiente correlativo usando la función de PostgreSQL
+      const { data: correlativoData, error: correlativoError } =
+        await supabase.rpc("obtener_siguiente_correlativo", {
+          p_tipo_comprobante: tipoComprobanteSeleccionado,
+          p_serie: serieActiva.serie,
+        });
+
+      if (correlativoError) throw correlativoError;
+
+      const nuevoCorrelativo = correlativoData;
+
+      // Crear la venta con comprobante
       const { data: ventaData, error: ventaError } = await supabase
         .from("ventas")
         .insert([
@@ -250,6 +287,10 @@ function Ventas() {
             total: total,
             cliente_id: formData.cliente_id,
             usuario_id: userData.usuario_id,
+            estado: "completada",
+            tipo_comprobante: tipoComprobanteSeleccionado,
+            serie: serieActiva.serie,
+            numero_correlativo: nuevoCorrelativo,
           },
         ])
         .select()
@@ -286,7 +327,9 @@ function Ventas() {
         if (stockError) throw stockError;
       }
 
-      alert("Venta registrada exitosamente");
+      alert(
+        `Venta registrada exitosamente\nComprobante: ${ventaData.numero_comprobante}`
+      );
       handleCloseDialog();
       cargarDatos();
     } catch (error) {
@@ -295,8 +338,58 @@ function Ventas() {
     }
   };
 
-  const handleDelete = async (ventaId) => {
-    if (!window.confirm("¿Está seguro de eliminar esta venta?")) {
+  const handleAnularVenta = async (venta) => {
+    if (
+      !window.confirm(
+        "¿Está seguro de anular esta venta? Se devolverá el stock de los productos."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      // Obtener detalles de la venta
+      const { data: detalles, error: detallesError } = await supabase
+        .from("detalle_venta")
+        .select("*, productos(stock)")
+        .eq("venta_id", venta.venta_id);
+
+      if (detallesError) throw detallesError;
+
+      // Devolver stock de cada producto
+      for (const detalle of detalles) {
+        const nuevoStock = detalle.productos.stock + detalle.cantidad;
+
+        const { error: stockError } = await supabase
+          .from("productos")
+          .update({ stock: nuevoStock })
+          .eq("producto_id", detalle.producto_id);
+
+        if (stockError) throw stockError;
+      }
+
+      // Cambiar estado de la venta a anulada
+      const { error: ventaError } = await supabase
+        .from("ventas")
+        .update({ estado: "anulada" })
+        .eq("venta_id", venta.venta_id);
+
+      if (ventaError) throw ventaError;
+
+      alert("Venta anulada exitosamente. El stock ha sido devuelto.");
+      cargarDatos();
+    } catch (error) {
+      console.error("Error al anular venta:", error);
+      alert("Error al anular venta: " + error.message);
+    }
+  };
+
+  const handleEliminarVenta = async (ventaId) => {
+    if (
+      !window.confirm(
+        "ADVERTENCIA: ¿Está seguro de ELIMINAR permanentemente esta venta? Esta acción NO se puede deshacer y NO devolverá el stock. Se recomienda ANULAR en su lugar."
+      )
+    ) {
       return;
     }
 
@@ -307,7 +400,7 @@ function Ventas() {
         .eq("venta_id", ventaId);
 
       if (error) throw error;
-      alert("Venta eliminada exitosamente");
+      alert("Venta eliminada permanentemente");
       cargarDatos();
     } catch (error) {
       console.error("Error al eliminar venta:", error);
@@ -327,14 +420,36 @@ function Ventas() {
   };
 
   const columns = [
-    { Header: "Fecha", accessor: "fecha", width: "20%" },
-    { Header: "Cliente", accessor: "cliente", width: "25%" },
-    { Header: "Total", accessor: "total", width: "15%" },
-    { Header: "Atendido por", accessor: "usuario", width: "20%" },
-    { Header: "Acciones", accessor: "acciones", width: "20%" },
+    { Header: "Comprobante", accessor: "comprobante", width: "18%" },
+    { Header: "Fecha", accessor: "fecha", width: "15%" },
+    { Header: "Cliente", accessor: "cliente", width: "20%" },
+    { Header: "Total", accessor: "total", width: "12%" },
+    { Header: "Estado", accessor: "estado", width: "10%" },
+    { Header: "Atendido por", accessor: "usuario", width: "15%" },
+    { Header: "Acciones", accessor: "acciones", width: "10%" },
   ];
 
   const rows = ventas.map((venta) => ({
+    // <-- NUEVO
+    comprobante: (
+      <MDBox>
+        <MDTypography
+          variant="caption"
+          color="text"
+          fontWeight="bold"
+          display="block"
+        >
+          {venta.numero_comprobante || "Sin comprobante"}
+        </MDTypography>
+        <MDTypography variant="caption" color="text">
+          {venta.tipo_comprobante === "BOL"
+            ? "Boleta"
+            : venta.tipo_comprobante === "FAC"
+            ? "Factura"
+            : "-"}
+        </MDTypography>
+      </MDBox>
+    ),
     fecha: (
       <MDTypography variant="caption" color="text" fontWeight="medium">
         {formatearFecha(venta.fecha)}
@@ -352,6 +467,14 @@ function Ventas() {
         S/ {parseFloat(venta.total).toFixed(2)}
       </MDTypography>
     ),
+    estado: (
+      <Chip
+        label={venta.estado}
+        color={venta.estado === "completada" ? "success" : "error"}
+        size="small"
+        sx={{ textTransform: "capitalize" }}
+      />
+    ),
     usuario: (
       <MDTypography variant="caption" color="text" fontWeight="medium">
         {venta.usuarios
@@ -366,17 +489,31 @@ function Ventas() {
           color="success"
           size="small"
           onClick={() => handleOpenDetalle(venta)}
+          title="Ver detalle"
         >
           <Icon>visibility</Icon>
         </MDButton>
-        <MDButton
+        {venta.estado === "completada" && (
+          <MDButton
+            variant="text"
+            color="warning"
+            size="small"
+            onClick={() => handleAnularVenta(venta)}
+            title="Anular venta (devuelve stock)"
+          >
+            <Icon>cancel</Icon>
+          </MDButton>
+        )}
+        {/* //Se anulo el boton de eliminar venta */}
+        {/* <MDButton
           variant="text"
           color="error"
           size="small"
-          onClick={() => handleDelete(venta.venta_id)}
+          onClick={() => handleEliminarVenta(venta.venta_id)}
+          title="Eliminar permanentemente"
         >
           <Icon>delete</Icon>
-        </MDButton>
+        </MDButton> */}
       </MDBox>
     ),
   }));
@@ -478,6 +615,65 @@ function Ventas() {
                     ))}
                   </Select>
                 </FormControl>
+              </Grid>
+
+              {/* AGREGAR ESTO - Tipo de Comprobante */}
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth required>
+                  <InputLabel id="tipo-comprobante-label" sx={{ top: "-7px" }}>
+                    Tipo de Comprobante
+                  </InputLabel>
+                  <Select
+                    labelId="tipo-comprobante-label"
+                    value={tipoComprobanteSeleccionado}
+                    onChange={(e) =>
+                      setTipoComprobanteSeleccionado(e.target.value)
+                    }
+                    label="Tipo de Comprobante"
+                    sx={{
+                      height: "45px",
+                      "& .MuiSelect-select": {
+                        paddingTop: "12px",
+                        paddingBottom: "12px",
+                      },
+                    }}
+                  >
+                    <MenuItem value="BOL">Boleta de Venta</MenuItem>
+                    <MenuItem value="FAC">Factura Electrónica</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Serie Actual */}
+              <Grid item xs={12} md={6}>
+                <MDBox
+                  p={2}
+                  borderRadius="lg"
+                  sx={{ backgroundColor: "rgba(0, 0, 0, 0.05)" }}
+                >
+                  <MDTypography
+                    variant="caption"
+                    fontWeight="bold"
+                    display="block"
+                  >
+                    Serie Actual:
+                  </MDTypography>
+                  <MDTypography variant="h6" color="info">
+                    {seriesDisponibles.find(
+                      (s) =>
+                        s.tipo_comprobante === tipoComprobanteSeleccionado &&
+                        s.estado === "activo"
+                    )?.serie || "N/A"}
+                    {" - "}
+                    {String(
+                      (seriesDisponibles.find(
+                        (s) =>
+                          s.tipo_comprobante === tipoComprobanteSeleccionado &&
+                          s.estado === "activo"
+                      )?.correlativo_actual || 0) + 1
+                    ).padStart(8, "0")}
+                  </MDTypography>
+                </MDBox>
               </Grid>
 
               <Grid item xs={12}>
